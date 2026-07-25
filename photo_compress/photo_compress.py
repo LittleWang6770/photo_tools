@@ -312,9 +312,13 @@ def save_png(image: Image.Image, path: Path, task: CompressTask) -> None:
     text_info = png_text_info(image)
     if text_info is not None:
         options["pnginfo"] = text_info
-    for key in ("icc_profile", "exif", "dpi", "transparency", "bits"):
+    for key in ("icc_profile", "exif", "dpi"):
         if image.info.get(key) is not None:
             options[key] = image.info[key]
+    if image.info.get("transparency") is not None and image.mode in {"P", "1", "L", "I", "RGB"}:
+        options["transparency"] = image.info["transparency"]
+    if image.info.get("bits") is not None and image.mode == "P":
+        options["bits"] = image.info["bits"]
     image.save(path, **options)
 
 
@@ -467,6 +471,8 @@ def validate_arguments(args: argparse.Namespace) -> tuple[Path, Path | None]:
     output_directory = None
     if args.output is not None:
         output_directory = args.output.expanduser().resolve()
+        if output_directory == Path(output_directory.anchor):
+            raise ValueError("出于安全考虑，不允许把文件系统根目录作为输出目录。")
         if output_directory == input_directory:
             raise ValueError("输出目录不能等于输入目录；原地压缩请使用 --in-place。")
         if path_is_inside(output_directory, input_directory):

@@ -61,6 +61,33 @@ class CompressionTests(unittest.TestCase):
             self.assertEqual("failed", result.status)
             self.assertFalse(destination.exists())
 
+    def test_rgba_png_preserves_alpha_channel(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "source.png"
+            destination = root / "output" / "source.png"
+            Image.new("RGBA", (64, 64), (255, 0, 0, 80)).save(source, compress_level=0)
+            task = photo_compress.CompressTask(
+                source_path=str(source),
+                destination_path=str(destination),
+                relative_path="source.png",
+                image_format="PNG",
+                in_place=False,
+                quality=88,
+                optimize=True,
+                progressive=True,
+                png_compress_level=9,
+                verify=True,
+                settings_signature="png-test",
+            )
+
+            result = photo_compress.compress_one(task)
+
+            self.assertEqual("compressed", result.status)
+            with Image.open(destination) as output:
+                self.assertEqual("RGBA", output.mode)
+                self.assertEqual(80, output.getpixel((0, 0))[3])
+
 
 class StateTests(unittest.TestCase):
     def test_state_only_matches_unchanged_file_and_settings(self) -> None:

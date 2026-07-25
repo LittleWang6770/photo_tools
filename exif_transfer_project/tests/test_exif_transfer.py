@@ -52,6 +52,17 @@ class MetadataHelpersTests(unittest.TestCase):
         self.assertTrue(exif_transfer.values_equal(31.23456780, 31.23456781))
         self.assertFalse(exif_transfer.values_equal(31.2, 31.3))
 
+    def test_gps_match_ignores_tags_missing_from_source(self) -> None:
+        source = {"GPSLatitude": 31.2, "GPSLongitude": 121.5}
+        target = {
+            "GPSLatitude": 31.2,
+            "GPSLongitude": 121.5,
+            "GPSAltitude": 30,
+        }
+        self.assertTrue(exif_transfer.gps_matches(source, target))
+        target["GPSLongitude"] = 120.0
+        self.assertFalse(exif_transfer.gps_matches(source, target))
+
     def test_gps_copy_does_not_include_dimensions(self) -> None:
         arguments = exif_transfer.copy_arguments(
             Path("source.jpg"), Path("target.jpg"), all_exif=False

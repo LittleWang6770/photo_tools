@@ -39,6 +39,7 @@ class PhotoPair:
 class Summary:
     matched: int = 0
     written: int = 0
+    skipped_unchanged: int = 0
     skipped_no_gps: int = 0
     verify_failed: int = 0
     failed: int = 0
@@ -125,6 +126,15 @@ def values_equal(source_value: object, target_value: object) -> bool:
     if isinstance(source_value, (int, float)) and isinstance(target_value, (int, float)):
         return abs(float(source_value) - float(target_value)) < 1e-7
     return str(source_value).strip() == str(target_value).strip()
+
+
+def gps_matches(source_metadata: dict[str, object], target_metadata: dict[str, object]) -> bool:
+    """Return true when every GPS value present in the source already matches."""
+    return all(
+        source_metadata.get(tag) is None
+        or values_equal(source_metadata.get(tag), target_metadata.get(tag))
+        for tag in VERIFY_TAGS
+    )
 
 
 def verify_gps(
@@ -286,6 +296,13 @@ def execute(args: argparse.Namespace) -> int:
             print("  跳过：源图没有完整的 GPS 经纬度。")
             continue
 
+        if not args.all_exif:
+            target_metadata, _ = read_gps(executable, pair.target)
+            if target_metadata is not None and gps_matches(source_metadata, target_metadata):
+                summary.skipped_unchanged += 1
+                print("  跳过：目标图的 GPS 已一致。")
+                continue
+
         if not args.no_backup:
             try:
                 backup_path = create_backup(pair, backup_root)
@@ -315,7 +332,10 @@ def execute(args: argparse.Namespace) -> int:
                 print("  核验失败：" + "; ".join(problems))
 
     print("\n处理完成")
-    print(f"匹配：{summary.matched}，写入：{summary.written}，无 GPS 跳过：{summary.skipped_no_gps}")
+    print(
+        f"匹配：{summary.matched}，写入：{summary.written}，"
+        f"已一致跳过：{summary.skipped_unchanged}，无 GPS 跳过：{summary.skipped_no_gps}"
+    )
     print(f"核验失败：{summary.verify_failed}，处理失败：{summary.failed}")
     return 1 if summary.failed or summary.verify_failed else 0
 
