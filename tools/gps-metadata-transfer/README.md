@@ -32,39 +32,42 @@ Ubuntu/Debian：
 sudo apt install libimage-exiftool-perl
 ```
 
-确认安装：
+创建独立环境并安装工具：
 
 ```bash
-exiftool -ver
-python3 exif_transfer.py --help
+cd tools/gps-metadata-transfer
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+gps-metadata-transfer --help
 ```
 
-Python 部分只使用标准库，不需要 `pip install`。
+Python 部分只使用标准库；`pip install -e .` 用于注册命令行入口，方便开发和更新。也可以使用 `python -m gps_metadata_transfer` 运行同一入口。
 
 ## 快速开始
 
 先预览将要匹配的照片：
 
 ```bash
-python3 exif_transfer.py "/path/to/originals" "/path/to/exports" --dry-run
+gps-metadata-transfer "/path/to/originals" "/path/to/exports" --dry-run
 ```
 
 确认匹配正确后迁移 GPS：
 
 ```bash
-python3 exif_transfer.py "/path/to/originals" "/path/to/exports"
+gps-metadata-transfer "/path/to/originals" "/path/to/exports"
 ```
 
 递归处理子目录：
 
 ```bash
-python3 exif_transfer.py "/path/to/originals" "/path/to/exports" --recursive
+gps-metadata-transfer "/path/to/originals" "/path/to/exports" --recursive
 ```
 
 处理单张照片：
 
 ```bash
-python3 exif_transfer.py source.JPG target.jpeg
+gps-metadata-transfer source.JPG target.jpeg
 ```
 
 默认备份目录位于目标目录下：
@@ -81,31 +84,31 @@ exports/
 迁移相机、镜头、拍摄时间以及 GPS 等拍摄元数据：
 
 ```bash
-python3 exif_transfer.py originals exports --all-exif
+gps-metadata-transfer originals exports --all-exif
 ```
 
 指定备份位置：
 
 ```bash
-python3 exif_transfer.py originals exports --backup-dir "/path/to/backups"
+gps-metadata-transfer originals exports --backup-dir "/path/to/backups"
 ```
 
 不创建备份（不推荐）：
 
 ```bash
-python3 exif_transfer.py originals exports --no-backup
+gps-metadata-transfer originals exports --no-backup
 ```
 
 如果目标图的 EXIF 数据块损坏，允许在已备份后清除并重建 EXIF：
 
 ```bash
-python3 exif_transfer.py originals exports --repair-broken-exif
+gps-metadata-transfer originals exports --repair-broken-exif
 ```
 
 查看全部参数：
 
 ```bash
-python3 exif_transfer.py --help
+gps-metadata-transfer --help
 ```
 
 ## 匹配规则

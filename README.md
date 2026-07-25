@@ -1,9 +1,9 @@
 # Photo Tools
 
-两个相互独立、可直接从命令行使用的照片工具：
+`photo-tools` 是一个多工具仓库，包含两个相互独立、可直接安装的命令行工具：
 
-- [`exif_transfer_project/`](exif_transfer_project/)：把原图中的 GPS 经纬度（可选全部拍摄 EXIF）迁移到导出图。
-- [`photo_compress/`](photo_compress/)：批量压缩 JPEG/PNG，支持输出到新目录或显式原地压缩。
+- [`tools/gps-metadata-transfer/`](tools/gps-metadata-transfer/)：把原图中的 GPS 经纬度（可选全部拍摄 EXIF）迁移到导出图。
+- [`tools/photo-compressor/`](tools/photo-compressor/)：批量压缩 JPEG/PNG，支持输出到新目录或显式原地压缩。
 
 每个工具都有独立的依赖说明、完整用法和安全注意事项，请进入对应目录阅读 README。
 
@@ -14,9 +14,34 @@
 - 写文件时先生成并校验临时文件，再原子替换，避免中断留下半成品。
 - 本地照片、虚拟环境、日志、断点文件不会提交到 Git。
 
+## 命名与目录约定
+
+两个工具遵循相同的现代 Python 项目结构：
+
+```text
+tools/<project-name>/
+├── pyproject.toml
+├── README.md
+├── src/<package_name>/
+│   ├── __init__.py
+│   ├── __main__.py
+│   └── cli.py
+└── tests/
+    └── test_cli.py
+```
+
+- 项目目录和终端命令使用 `kebab-case`，例如 `photo-compressor`。
+- Python 包使用 `snake_case`，例如 `photo_compressor`。
+- `cli.py` 集中当前小工具的命令行编排和业务流程；功能增长后可按领域继续拆分模块。
+- `__main__.py` 统一支持 `python -m <package_name>` 运行方式。
+- 依赖、Python 版本和命令入口统一声明在 `pyproject.toml`。
+
 ## 快速检查
 
 ```bash
-python3 -m unittest discover -s exif_transfer_project/tests -v
-python3 -m unittest discover -s photo_compress/tests -v
+tools/gps-metadata-transfer/.venv/bin/python -m unittest discover \
+  -s tools/gps-metadata-transfer/tests -v
+
+tools/photo-compressor/.venv/bin/python -m unittest discover \
+  -s tools/photo-compressor/tests -v
 ```

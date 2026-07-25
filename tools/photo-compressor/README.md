@@ -22,11 +22,11 @@
 需要 Python 3.10 或更新版本。
 
 ```bash
-cd photo_compress
+cd tools/photo-compressor
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
-python photo_compress.py --help
+python -m pip install -e .
+photo-compressor --help
 ```
 
 Windows 激活虚拟环境：
@@ -35,12 +35,14 @@ Windows 激活虚拟环境：
 .venv\Scripts\activate
 ```
 
+也可以使用 `python -m photo_compressor` 运行同一入口。
+
 ## 推荐用法：输出到新目录
 
 先扫描并预览，不写文件：
 
 ```bash
-python photo_compress.py "/path/to/originals" \
+photo-compressor "/path/to/originals" \
   --output "/path/to/compressed" \
   --dry-run
 ```
@@ -48,7 +50,7 @@ python photo_compress.py "/path/to/originals" \
 先试跑 100 张：
 
 ```bash
-python photo_compress.py "/path/to/originals" \
+photo-compressor "/path/to/originals" \
   --output "/path/to/compressed" \
   --limit 100
 ```
@@ -56,14 +58,14 @@ python photo_compress.py "/path/to/originals" \
 确认画质、方向、色彩和定位信息无误后处理全部照片：
 
 ```bash
-python photo_compress.py "/path/to/originals" \
+photo-compressor "/path/to/originals" \
   --output "/path/to/compressed"
 ```
 
 输出目录会保留输入目录的层级。已存在的目标文件默认跳过；如确实需要重新生成：
 
 ```bash
-python photo_compress.py originals --output compressed --overwrite
+photo-compressor originals --output compressed --overwrite
 ```
 
 ## 原地压缩
@@ -71,13 +73,13 @@ python photo_compress.py originals --output compressed --overwrite
 原地压缩会修改照片，请先准备独立备份，并先执行小批量试跑：
 
 ```bash
-python photo_compress.py "/path/to/photos" --in-place --limit 100
+photo-compressor "/path/to/photos" --in-place --limit 100
 ```
 
 确认无误后处理剩余照片：
 
 ```bash
-python photo_compress.py "/path/to/photos" --in-place
+photo-compressor "/path/to/photos" --in-place
 ```
 
 断点文件 `.photo-compress-state.jsonl` 和日志 `photo-compress-log.csv` 默认保存在照片根目录。断点记录包含压缩参数签名、文件大小和修改时间；参数或文件发生变化后会重新处理。
@@ -85,7 +87,7 @@ python photo_compress.py "/path/to/photos" --in-place
 仅在明确需要时忽略断点记录：
 
 ```bash
-python photo_compress.py photos --in-place --force
+photo-compressor photos --in-place --force
 ```
 
 JPEG 是有损格式，`--force` 可能造成重复压缩和累积画质损失。
@@ -95,14 +97,14 @@ JPEG 是有损格式，`--force` 可能造成重复压缩和累积画质损失�
 JPEG 默认质量是 `88`。更保守可设为 `90`，更节省空间可尝试 `85`：
 
 ```bash
-python photo_compress.py originals --output compressed --quality 90
+photo-compressor originals --output compressed --quality 90
 ```
 
 只处理 JPEG 或 PNG：
 
 ```bash
-python photo_compress.py originals --output compressed --format jpeg
-python photo_compress.py originals --output compressed --format png
+photo-compressor originals --output compressed --format jpeg
+photo-compressor originals --output compressed --format png
 ```
 
 PNG 压缩是无损的，不缩小尺寸、不减少颜色、不删除透明通道。默认压缩等级为 `9`。
@@ -120,7 +122,7 @@ PNG 压缩是无损的，不缩小尺寸、不减少颜色、不删除透明通�
 示例：
 
 ```bash
-python photo_compress.py originals --output compressed --profile hdd
+photo-compressor originals --output compressed --profile hdd
 ```
 
 也可以用 `--workers 3` 覆盖预设。默认 `--nice 10` 会降低工作进程的 CPU 优先级；不希望降低时使用 `--nice 0`。
@@ -138,7 +140,7 @@ python photo_compress.py originals --output compressed --profile hdd
 查看全部参数：
 
 ```bash
-python photo_compress.py --help
+photo-compressor --help
 ```
 
 ## 安全说明

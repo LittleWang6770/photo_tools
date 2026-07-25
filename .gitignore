@@ -222,10 +222,10 @@ __marimo__/
 **/.DS_Store
 
 # Local photo samples and generated output
-exif_transfer_project/source.*
-exif_transfer_project/target.*
-exif_transfer_project/.exif-transfer-backup/
-photo_compress/raw/
-photo_compress/compressed/
-photo_compress/*.csv
-photo_compress/*.jsonl
+tools/gps-metadata-transfer/source.*
+tools/gps-metadata-transfer/target.*
+tools/gps-metadata-transfer/.exif-transfer-backup/
+tools/photo-compressor/raw/
+tools/photo-compressor/compressed/
+tools/photo-compressor/*.csv
+tools/photo-compressor/*.jsonl
