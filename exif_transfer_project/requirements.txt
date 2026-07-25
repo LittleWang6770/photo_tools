@@ -1,0 +1,2 @@
+# 此工具的 Python 代码仅使用标准库。
+# 仍需按 README 安装独立的 ExifTool 命令行程序。

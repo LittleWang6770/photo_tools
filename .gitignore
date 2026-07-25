@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# macOS / local IDE files
+.DS_Store
+**/.DS_Store
+
+# Local photo samples and generated output
+exif_transfer_project/source.*
+exif_transfer_project/target.*
+exif_transfer_project/.exif-transfer-backup/
+photo_compress/raw/
+photo_compress/compressed/
+photo_compress/*.csv
+photo_compress/*.jsonl
