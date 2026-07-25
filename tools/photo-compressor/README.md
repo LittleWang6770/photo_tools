@@ -65,7 +65,9 @@ photo-compressor "/path/to/originals" \
 输出目录会保留输入目录的层级。已存在的目标文件默认跳过；如确实需要重新生成：
 
 ```bash
-photo-compressor originals --output compressed --overwrite
+photo-compressor "/path/to/originals" \
+  --output "/path/to/compressed" \
+  --overwrite
 ```
 
 ## 原地压缩
@@ -87,7 +89,7 @@ photo-compressor "/path/to/photos" --in-place
 仅在明确需要时忽略断点记录：
 
 ```bash
-photo-compressor photos --in-place --force
+photo-compressor "/path/to/photos" --in-place --force
 ```
 
 JPEG 是有损格式，`--force` 可能造成重复压缩和累积画质损失。
@@ -97,14 +99,21 @@ JPEG 是有损格式，`--force` 可能造成重复压缩和累积画质损失�
 JPEG 默认质量是 `88`。更保守可设为 `90`，更节省空间可尝试 `85`：
 
 ```bash
-photo-compressor originals --output compressed --quality 90
+photo-compressor "/path/to/originals" \
+  --output "/path/to/compressed" \
+  --quality 90
 ```
 
 只处理 JPEG 或 PNG：
 
 ```bash
-photo-compressor originals --output compressed --format jpeg
-photo-compressor originals --output compressed --format png
+photo-compressor "/path/to/originals" \
+  --output "/path/to/compressed" \
+  --format jpeg
+
+photo-compressor "/path/to/originals" \
+  --output "/path/to/compressed" \
+  --format png
 ```
 
 PNG 压缩是无损的，不缩小尺寸、不减少颜色、不删除透明通道。默认压缩等级为 `9`。
@@ -122,7 +131,9 @@ PNG 压缩是无损的，不缩小尺寸、不减少颜色、不删除透明通�
 示例：
 
 ```bash
-photo-compressor originals --output compressed --profile hdd
+photo-compressor "/path/to/originals" \
+  --output "/path/to/compressed" \
+  --profile hdd
 ```
 
 也可以用 `--workers 3` 覆盖预设。默认 `--nice 10` 会降低工作进程的 CPU 优先级；不希望降低时使用 `--nice 0`。
@@ -133,7 +144,7 @@ photo-compressor originals --output compressed --profile hdd
 
 - 输出模式：日志默认在输出目录。
 - 原地模式：日志默认在输入目录。
-- 可用 `--log-file /path/to/log.csv` 自定义。
+- 可用 `--log-file "/path/to/log.csv"` 自定义。
 
 全部处理成功时返回码为 `0`；任意图片失败时返回码为 `1`；命令参数错误时返回码为 `2`。
 

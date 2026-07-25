@@ -67,13 +67,13 @@ gps-metadata-transfer "/path/to/originals" "/path/to/exports" --recursive
 处理单张照片：
 
 ```bash
-gps-metadata-transfer source.JPG target.jpeg
+gps-metadata-transfer "/path/to/source.JPG" "/path/to/target.jpeg"
 ```
 
 默认备份目录位于目标目录下：
 
 ```text
-exports/
+/path/to/exports/
 ├── photo-001.jpg
 └── .exif-transfer-backup/
     └── photo-001.jpg
@@ -84,25 +84,27 @@ exports/
 迁移相机、镜头、拍摄时间以及 GPS 等拍摄元数据：
 
 ```bash
-gps-metadata-transfer originals exports --all-exif
+gps-metadata-transfer "/path/to/originals" "/path/to/exports" --all-exif
 ```
 
 指定备份位置：
 
 ```bash
-gps-metadata-transfer originals exports --backup-dir "/path/to/backups"
+gps-metadata-transfer "/path/to/originals" "/path/to/exports" \
+  --backup-dir "/path/to/backups"
 ```
 
 不创建备份（不推荐）：
 
 ```bash
-gps-metadata-transfer originals exports --no-backup
+gps-metadata-transfer "/path/to/originals" "/path/to/exports" --no-backup
 ```
 
 如果目标图的 EXIF 数据块损坏，允许在已备份后清除并重建 EXIF：
 
 ```bash
-gps-metadata-transfer originals exports --repair-broken-exif
+gps-metadata-transfer "/path/to/originals" "/path/to/exports" \
+  --repair-broken-exif
 ```
 
 查看全部参数：
@@ -118,8 +120,8 @@ gps-metadata-transfer --help
 使用 `--recursive` 时，相对路径也必须一致。例如：
 
 ```text
-originals/trip/day1/IMG_001.JPG
-exports/trip/day1/IMG_001.jpeg
+/path/to/originals/trip/day1/IMG_001.JPG
+/path/to/exports/trip/day1/IMG_001.jpeg
 ```
 
 如果源图没有完整的纬度和经度，工具会跳过它，不会清空目标图原有 GPS。

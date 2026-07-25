@@ -90,13 +90,13 @@ focal-length-statistics "/path/to/photo.jpg"
 默认的标准焦段聚类：
 
 ```bash
-focal-length-statistics photos --grouping standard
+focal-length-statistics "/path/to/photos" --grouping standard
 ```
 
 使用自定义标准焦段：
 
 ```bash
-focal-length-statistics photos \
+focal-length-statistics "/path/to/photos" \
   --grouping standard \
   --anchors 24,28,35,50,70,85,135,200
 ```
@@ -106,13 +106,13 @@ focal-length-statistics photos \
 如果需要查看原始焦段分布，可以切换到精确模式：
 
 ```bash
-focal-length-statistics photos --grouping exact
+focal-length-statistics "/path/to/photos" --grouping exact
 ```
 
 精确模式默认以 1 mm 为间隔分组，也可以改为 0.5 mm：
 
 ```bash
-focal-length-statistics photos --grouping exact --bucket-size 0.5
+focal-length-statistics "/path/to/photos" --grouping exact --bucket-size 0.5
 ```
 
 ### 显示阈值
@@ -120,7 +120,7 @@ focal-length-statistics photos --grouping exact --bucket-size 0.5
 把占比阈值改为 3%，并至少显示 Top 10：
 
 ```bash
-focal-length-statistics photos \
+focal-length-statistics "/path/to/photos" \
   --minimum-percentage 3 \
   --minimum-items 10
 ```
@@ -128,7 +128,8 @@ focal-length-statistics photos \
 如果 ExifTool 不在 `PATH` 中：
 
 ```bash
-focal-length-statistics photos --exiftool /custom/path/exiftool
+focal-length-statistics "/path/to/photos" \
+  --exiftool "/custom/path/exiftool"
 ```
 
 查看全部参数：
