@@ -10,9 +10,17 @@ import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
+
+from .grouping import (
+    DEFAULT_ANCHORS_TEXT,
+    GROUPING_MODES,
+    group_focal_length,
+    parse_anchors,
+    positive_decimal,
+)
 
 
 JPEG_SUFFIXES = {".jpg", ".jpeg"}
@@ -79,16 +87,6 @@ def read_exif_records(executable: str, input_path: Path) -> list[dict[str, objec
     return [record for record in payload if isinstance(record, dict)]
 
 
-def positive_decimal(value: object) -> Decimal | None:
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        decimal_value = Decimal(str(value))
-    except (InvalidOperation, ValueError):
-        return None
-    return decimal_value if decimal_value.is_finite() and decimal_value > 0 else None
-
-
 def extract_focal_length(record: Mapping[str, object]) -> Decimal | None:
     """Prefer the standard EXIF value and fall back to ExifTool's composite value."""
     for tag in FOCAL_LENGTH_TAGS:
@@ -98,22 +96,24 @@ def extract_focal_length(record: Mapping[str, object]) -> Decimal | None:
     return None
 
 
-def normalize_focal_length(value: Decimal, bucket_size: Decimal) -> Decimal:
-    """Round to the nearest configurable bucket using conventional half-up rounding."""
-    bucket_index = (value / bucket_size).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-    return (bucket_index * bucket_size).normalize()
-
-
 def build_statistics(
     scanned_images: int,
     exif_records: Sequence[Mapping[str, object]],
+    grouping_mode: str,
+    anchors: Sequence[Decimal],
     bucket_size: Decimal,
 ) -> Statistics:
     frequencies: Counter[Decimal] = Counter()
     for record in exif_records:
         focal_length = extract_focal_length(record)
         if focal_length is not None:
-            frequencies[normalize_focal_length(focal_length, bucket_size)] += 1
+            grouped_focal_length = group_focal_length(
+                focal_length,
+                grouping_mode,
+                anchors,
+                bucket_size,
+            )
+            frequencies[grouped_focal_length] += 1
 
     exif_images = len(exif_records)
     focal_length_images = sum(frequencies.values())
@@ -153,6 +153,7 @@ def print_report(
     statistics: Statistics,
     minimum_percentage: float,
     minimum_items: int,
+    grouping_mode: str,
 ) -> None:
     print(f"共扫描 {statistics.scanned_images:,} 张 JPG/JPEG 图片。")
     print(f"共有 {statistics.exif_images:,} 张包含 EXIF 信息的图片。")
@@ -170,7 +171,12 @@ def print_report(
         return
 
     displayed_rows = visible_rows(statistics.rows, minimum_percentage, minimum_items)
-    print("\n焦段使用频度（按照片数量从高到低排序）：")
+    report_name = (
+        "标准焦段聚类统计"
+        if grouping_mode == "standard"
+        else "精确焦段统计"
+    )
+    print(f"\n{report_name}（按照片数量从高到低排序）：")
     for index, row in enumerate(displayed_rows, start=1):
         focal_length = format_focal_length(row.focal_length)
         print(
@@ -211,8 +217,19 @@ def execute(args: argparse.Namespace) -> int:
         )
 
     records = read_exif_records(executable, input_path)
-    statistics = build_statistics(len(jpeg_files), records, args.bucket_size)
-    print_report(statistics, args.minimum_percentage, args.minimum_items)
+    statistics = build_statistics(
+        len(jpeg_files),
+        records,
+        args.grouping,
+        args.anchors,
+        args.bucket_size,
+    )
+    print_report(
+        statistics,
+        args.minimum_percentage,
+        args.minimum_items,
+        args.grouping,
+    )
     return 0
 
 
@@ -221,6 +238,13 @@ def positive_decimal_argument(value: str) -> Decimal:
     if decimal_value is None:
         raise argparse.ArgumentTypeError("必须是大于 0 的数字。")
     return decimal_value
+
+
+def anchors_argument(value: str) -> tuple[Decimal, ...]:
+    try:
+        return parse_anchors(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error)) from error
 
 
 def percentage_argument(value: str) -> float:
@@ -254,6 +278,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="需要递归扫描的图片目录或单张 JPG/JPEG",
     )
     parser.add_argument(
+        "--grouping",
+        choices=GROUPING_MODES,
+        default="standard",
+        help="standard 归入常用焦段；exact 保留精确焦段分组",
+    )
+    parser.add_argument(
+        "--anchors",
+        type=anchors_argument,
+        default=DEFAULT_ANCHORS_TEXT,
+        metavar="MM,...",
+        help="standard 模式使用的标准焦段列表",
+    )
+    parser.add_argument(
         "--minimum-percentage",
         type=percentage_argument,
         default=5.0,
@@ -270,7 +307,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=positive_decimal_argument,
         default=Decimal("1"),
         metavar="MM",
-        help="将等效焦段四舍五入到最接近的分组间隔",
+        help="exact 模式将焦段四舍五入到最接近的分组间隔",
     )
     parser.add_argument(
         "--exiftool",

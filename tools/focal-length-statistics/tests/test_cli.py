@@ -10,6 +10,7 @@ from subprocess import CompletedProcess
 from unittest.mock import patch
 
 from focal_length_statistics import cli
+from focal_length_statistics.grouping import DEFAULT_ANCHORS
 
 
 class FileDiscoveryTests(unittest.TestCase):
@@ -49,16 +50,6 @@ class StatisticsTests(unittest.TestCase):
         record = {"FocalLength35efl": 26}
         self.assertEqual(Decimal("26"), cli.extract_focal_length(record))
 
-    def test_bucket_rounding_uses_half_up(self) -> None:
-        self.assertEqual(
-            Decimal("36"),
-            cli.normalize_focal_length(Decimal("35.5"), Decimal("1")),
-        )
-        self.assertEqual(
-            Decimal("35.5"),
-            cli.normalize_focal_length(Decimal("35.26"), Decimal("0.5")),
-        )
-
     def test_sorts_by_count_then_focal_length(self) -> None:
         records = [
             *({"FocalLengthIn35mmFormat": 35} for _ in range(5)),
@@ -67,12 +58,37 @@ class StatisticsTests(unittest.TestCase):
             {},
         ]
 
-        statistics = cli.build_statistics(12, records, Decimal("1"))
+        statistics = cli.build_statistics(
+            12,
+            records,
+            grouping_mode="exact",
+            anchors=DEFAULT_ANCHORS,
+            bucket_size=Decimal("1"),
+        )
 
         self.assertEqual(10, statistics.exif_images)
         self.assertEqual(9, statistics.focal_length_images)
         self.assertEqual([35, 24, 50], [int(row.focal_length) for row in statistics.rows])
         self.assertAlmostEqual(50.0, statistics.rows[0].percentage)
+
+    def test_standard_mode_aggregates_nearby_values(self) -> None:
+        records = [
+            {"FocalLengthIn35mmFormat": 49},
+            {"FocalLengthIn35mmFormat": 50},
+            {"FocalLengthIn35mmFormat": 51},
+        ]
+
+        statistics = cli.build_statistics(
+            3,
+            records,
+            grouping_mode="standard",
+            anchors=DEFAULT_ANCHORS,
+            bucket_size=Decimal("1"),
+        )
+
+        self.assertEqual(1, len(statistics.rows))
+        self.assertEqual(Decimal("50"), statistics.rows[0].focal_length)
+        self.assertEqual(3, statistics.rows[0].count)
 
     def test_minimum_items_overrides_percentage_filter(self) -> None:
         rows = tuple(
@@ -110,12 +126,18 @@ class OutputTests(unittest.TestCase):
         output = io.StringIO()
 
         with redirect_stdout(output):
-            cli.print_report(statistics, minimum_percentage=5.0, minimum_items=5)
+            cli.print_report(
+                statistics,
+                minimum_percentage=5.0,
+                minimum_items=5,
+                grouping_mode="standard",
+            )
 
         report = output.getvalue()
         self.assertIn("共有 100 张包含 EXIF", report)
         self.assertIn("35 mm：50 张", report)
         self.assertIn("50.00%", report)
+        self.assertNotIn("×", report)
 
 
 if __name__ == "__main__":
