@@ -1,0 +1,1 @@
+"""Batch photo compression tool."""
