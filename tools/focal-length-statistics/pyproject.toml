@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "focal-length-statistics"
+version = "0.1.0"
+description = "Report full-frame-equivalent focal-length frequency for JPEG photos."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "LittleWang6770" }]
+dependencies = []
+
+[project.scripts]
+focal-length-statistics = "focal_length_statistics.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

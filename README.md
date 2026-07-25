@@ -1,9 +1,10 @@
 # Photo Tools
 
-`photo-tools` 是一个多工具仓库，包含两个相互独立、可直接安装的命令行工具：
+`photo-tools` 是一个多工具仓库，包含三个相互独立、可直接安装的命令行工具：
 
 - [`tools/gps-metadata-transfer/`](tools/gps-metadata-transfer/)：把原图中的 GPS 经纬度（可选全部拍摄 EXIF）迁移到导出图。
 - [`tools/photo-compressor/`](tools/photo-compressor/)：批量压缩 JPEG/PNG，支持输出到新目录或显式原地压缩。
+- [`tools/focal-length-statistics/`](tools/focal-length-statistics/)：递归统计 JPG/JPEG 的全画幅等效焦段使用频度。
 
 每个工具都有独立的依赖说明、完整用法和安全注意事项，请进入对应目录阅读 README。
 
@@ -16,7 +17,7 @@
 
 ## 命名与目录约定
 
-两个工具遵循相同的现代 Python 项目结构：
+三个工具遵循相同的现代 Python 项目结构：
 
 ```text
 tools/<project-name>/
@@ -44,4 +45,7 @@ tools/gps-metadata-transfer/.venv/bin/python -m unittest discover \
 
 tools/photo-compressor/.venv/bin/python -m unittest discover \
   -s tools/photo-compressor/tests -v
+
+tools/focal-length-statistics/.venv/bin/python -m unittest discover \
+  -s tools/focal-length-statistics/tests -v
 ```
