@@ -37,7 +37,7 @@ batch-gps-copy -f "/path/to/target_photo.JPG" "/path/to/photos"
 如明确不需要备份：
 
 ```bash
-batch-gps-copy --no-backup "/path/to/target_photo.JPG" "/path/to/photos"
+batch-gps-copy -f --no-backup target_photo.JPG /path/to/photos
 ```
 
 工具只处理 `.jpg` 和 `.jpeg`（扩展名大小写不敏感），并递归处理子文件夹。模板照片必须包含完整的 GPS 纬度和经度，否则工具会拒绝运行。
