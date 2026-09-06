@@ -1,7 +1,8 @@
 # Photo Tools
 
-`photo-tools` 是一个多工具仓库，包含三个相互独立、可直接安装的命令行工具：
+`photo-tools` 是一个多工具仓库，包含四个相互独立、可直接安装的命令行工具：
 
+- [`tools/batch-gps-copy/`](tools/batch-gps-copy/)：把一张模板照片的 GPS 批量复制到文件夹内的全部照片，默认跳过已有 GPS 的照片，`-f` 可强制覆盖。
 - [`tools/gps-metadata-transfer/`](tools/gps-metadata-transfer/)：把原图中的 GPS 经纬度（可选全部拍摄 EXIF）迁移到导出图。
 - [`tools/photo-compressor/`](tools/photo-compressor/)：批量压缩 JPEG/PNG，支持输出到新目录或显式原地压缩。
 - [`tools/focal-length-statistics/`](tools/focal-length-statistics/)：递归统计 JPG/JPEG 的全画幅等效焦段使用频度。
@@ -42,6 +43,9 @@ tools/<project-name>/
 ```bash
 tools/gps-metadata-transfer/.venv/bin/python -m unittest discover \
   -s tools/gps-metadata-transfer/tests -v
+
+tools/batch-gps-copy/.venv/bin/python -m unittest discover \
+  -s tools/batch-gps-copy/tests -v
 
 tools/photo-compressor/.venv/bin/python -m unittest discover \
   -s tools/photo-compressor/tests -v
