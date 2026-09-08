@@ -5,6 +5,8 @@
 - 目标照片已有任何 GPS 信息时默认跳过。
 - 使用 `-f` 或 `--force` 强制覆盖已有 GPS。
 - 写入后自动核验经纬度。
+- 默认使用保守的并发数批量处理，并可通过 `-j/--workers` 调整。
+- 终端使用单行进度条，不会为每张照片持续刷屏；进度条包含已用时间、预计总耗时和剩余时间，结束时显示实际总耗时。
 - 修改前默认将原文件备份到目标文件夹内的 `.batch-gps-copy-backup/`；重复运行不会覆盖旧备份。
 - 模板照片即使位于目标文件夹内也不会被处理。
 
@@ -33,6 +35,29 @@ batch-gps-copy "/path/to/target_photo.JPG" "/path/to/photos"
 ```bash
 batch-gps-copy -f "/path/to/target_photo.JPG" "/path/to/photos"
 ```
+
+强制覆盖已有 GPS，并使用 4 个并发任务：
+
+```bash
+batch-gps-copy -f -j 4 "/path/to/target_photo.JPG" "/path/to/photos"
+```
+
+默认并发数会根据 CPU 核心数保守计算（8 核机器默认为 3）。需要进一步减少对其他应用的影响时可改为 1；机器空闲时也可手动增加：
+
+```bash
+batch-gps-copy -j 1 "/path/to/target_photo.JPG" "/path/to/photos"
+batch-gps-copy -j 4 "/path/to/target_photo.JPG" "/path/to/photos"
+```
+
+允许的并发数范围是 1–32。对于 8 核、16 GB 的 MacBook Pro，日常使用建议保持默认值 3；更高数值会增加 CPU、内存和磁盘压力。
+
+运行过程中，进度会在同一行更新：
+
+```text
+[███░░░░░░░]  33.3% 333/1000 | 已用 00:01:20 | 预计 00:04:00 | 剩余 00:02:40
+```
+
+其中“预计”表示预计总耗时。处理结束后会显示实际总耗时。普通使用命令不需要增加任何参数。
 
 如明确不需要备份：
 

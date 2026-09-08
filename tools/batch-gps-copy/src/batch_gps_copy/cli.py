@@ -5,13 +5,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Callable, Iterable, Sequence, TextIO
 
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg"}
@@ -37,6 +41,82 @@ class Summary:
     written: int = 0
     skipped_existing: int = 0
     failed: int = 0
+
+
+@dataclass(frozen=True)
+class PhotoResult:
+    status: str
+    message: str
+
+
+def format_duration(seconds: float) -> str:
+    total_seconds = max(0, round(seconds))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def progress_line(completed: int, total: int, elapsed: float, width: int = 10) -> str:
+    ratio = completed / total if total else 1.0
+    filled = min(width, round(width * ratio))
+    bar = "█" * filled + "░" * (width - filled)
+    if completed:
+        estimated_total = elapsed / completed * total
+        remaining = max(0.0, estimated_total - elapsed)
+        estimate = format_duration(estimated_total)
+        remaining_text = format_duration(remaining)
+    else:
+        estimate = "计算中"
+        remaining_text = "计算中"
+    return (
+        f"[{bar}] {ratio:6.1%} {completed}/{total} | "
+        f"已用 {format_duration(elapsed)} | 预计 {estimate} | "
+        f"剩余 {remaining_text}"
+    )
+
+
+class ProgressReporter:
+    def __init__(
+        self,
+        total: int,
+        stream: TextIO | None = None,
+        clock: Callable[[], float] = time.monotonic,
+        refresh_interval: float = 0.1,
+    ) -> None:
+        self.total = total
+        self.stream = stream if stream is not None else sys.stdout
+        self.clock = clock
+        self.refresh_interval = refresh_interval
+        self.completed = 0
+        self.started_at = clock()
+        self.last_refresh = self.started_at
+        self.interactive = self.stream.isatty()
+
+    def advance(self) -> None:
+        self.completed += 1
+        now = self.clock()
+        if self.interactive and (
+            now - self.last_refresh >= self.refresh_interval
+            or self.completed == self.total
+        ):
+            self._write(now)
+
+    def finish(self) -> None:
+        now = self.clock()
+        if self.interactive:
+            self._write(now)
+            self.stream.write("\n")
+        else:
+            self.stream.write(
+                progress_line(self.completed, self.total, now - self.started_at) + "\n"
+            )
+        self.stream.flush()
+
+    def _write(self, now: float) -> None:
+        line = progress_line(self.completed, self.total, now - self.started_at)
+        self.stream.write(f"\r{line}\033[K")
+        self.stream.flush()
+        self.last_refresh = now
 
 
 def image_files(directory: Path, template: Path) -> Iterable[Path]:
@@ -148,6 +228,85 @@ def backup_path_for(photo: Path, directory: Path, backup_root: Path) -> Path:
     return path.with_name(f"{path.stem}_{stamp}{path.suffix}")
 
 
+def recommended_workers(cpu_count: int | None = None) -> int:
+    """Use roughly one third of the CPUs, capped to keep the laptop responsive."""
+    available = cpu_count if cpu_count is not None else (os.cpu_count() or 1)
+    return max(1, min(4, (available + 2) // 3))
+
+
+def worker_count(value: str) -> int:
+    try:
+        workers = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("并发数必须是整数。") from error
+    if not 1 <= workers <= 32:
+        raise argparse.ArgumentTypeError("并发数必须在 1 到 32 之间。")
+    return workers
+
+
+def process_photo(
+    photo: Path,
+    *,
+    executable: str,
+    template: Path,
+    directory: Path,
+    backup_root: Path,
+    expected: tuple[float, float, str, str],
+    force: bool,
+    no_backup: bool,
+) -> PhotoResult:
+    metadata, error = read_gps(executable, photo)
+    if metadata is None:
+        return PhotoResult("failed", error)
+    if has_gps(metadata) and not force:
+        return PhotoResult(
+            "skipped_existing",
+            "跳过：照片已有 GPS 信息（使用 -f 可强制覆盖）。",
+        )
+
+    if not no_backup:
+        destination = backup_path_for(photo, directory, backup_root)
+        try:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(photo, destination)
+        except OSError as error:
+            return PhotoResult("failed", f"无法备份照片：{error}")
+
+    result = copy_gps(executable, template, photo)
+    if result.returncode != 0:
+        return PhotoResult(
+            "failed",
+            result.stderr or result.stdout or "ExifTool 写入失败",
+        )
+
+    verified, error = verify_coordinates(executable, photo, expected)
+    if not verified:
+        return PhotoResult("failed", error)
+    return PhotoResult("written", "已写入并核验 GPS 经纬度。")
+
+
+def process_photos(
+    photos: Sequence[Path],
+    workers: int,
+    processor: Callable[[Path], PhotoResult],
+) -> Iterable[PhotoResult]:
+    def guarded(photo: Path) -> PhotoResult:
+        try:
+            return processor(photo)
+        except Exception as error:
+            return PhotoResult("failed", f"未预期的处理错误：{error}")
+
+    if workers == 1:
+        for photo in photos:
+            yield guarded(photo)
+        return
+    with ThreadPoolExecutor(
+        max_workers=workers,
+        thread_name_prefix="batch-gps-copy",
+    ) as executor:
+        yield from executor.map(guarded, photos)
+
+
 def validate_paths(template: Path, directory: Path) -> None:
     if not template.is_file():
         raise FileNotFoundError(f"模板照片不存在或不是文件：{template}")
@@ -158,6 +317,7 @@ def validate_paths(template: Path, directory: Path) -> None:
 
 
 def execute(args: argparse.Namespace) -> int:
+    overall_started_at = time.monotonic()
     template = args.template_photo.expanduser().resolve()
     directory = args.directory.expanduser().resolve()
     validate_paths(template, directory)
@@ -184,49 +344,46 @@ def execute(args: argparse.Namespace) -> int:
     backup_root = directory / BACKUP_DIRECTORY_NAME
     print(
         f"找到 {len(photos)} 张照片，模板坐标："
-        f"{expected[0]} {expected[2]}, {expected[1]} {expected[3]}"
+        f"{expected[0]} {expected[2]}, {expected[1]} {expected[3]}，"
+        f"并发数：{args.workers}"
     )
 
-    for index, photo in enumerate(photos, start=1):
-        relative = photo.relative_to(directory)
-        print(f"[{index}/{len(photos)}] {relative}")
-        metadata, error = read_gps(executable, photo)
-        if metadata is None:
+    processor = partial(
+        process_photo,
+        executable=executable,
+        template=template,
+        directory=directory,
+        backup_root=backup_root,
+        expected=expected,
+        force=args.force,
+        no_backup=args.no_backup,
+    )
+    progress = ProgressReporter(len(photos))
+    failures: list[tuple[Path, str]] = []
+    results = process_photos(photos, args.workers, processor)
+    for photo, result in zip(photos, results):
+        if result.status == "failed":
             summary.failed += 1
-            print(f"  失败：{error}")
-            continue
-        if has_gps(metadata) and not args.force:
+            failures.append((photo.relative_to(directory), result.message))
+        elif result.status == "skipped_existing":
             summary.skipped_existing += 1
-            print("  跳过：照片已有 GPS 信息（使用 -f 可强制覆盖）。")
-            continue
+        else:
+            summary.written += 1
+        progress.advance()
+    progress.finish()
 
-        if not args.no_backup:
-            destination = backup_path_for(photo, directory, backup_root)
-            try:
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(photo, destination)
-            except OSError as error:
-                summary.failed += 1
-                print(f"  失败：无法备份照片：{error}")
-                continue
+    if failures:
+        print("失败详情：")
+        for relative, message in failures[:20]:
+            print(f"  {relative}：{message}")
+        if len(failures) > 20:
+            print(f"  ……另有 {len(failures) - 20} 张失败未逐项显示。")
 
-        result = copy_gps(executable, template, photo)
-        if result.returncode != 0:
-            summary.failed += 1
-            print(f"  失败：{result.stderr or result.stdout or 'ExifTool 写入失败'}")
-            continue
-
-        verified, verify_error = verify_coordinates(executable, photo, expected)
-        if not verified:
-            summary.failed += 1
-            print(f"  失败：{verify_error}")
-            continue
-        summary.written += 1
-        print("  已写入并核验 GPS 经纬度。")
-
+    actual_duration = time.monotonic() - overall_started_at
     print(
         f"处理完成：发现 {summary.found}，写入 {summary.written}，"
-        f"已有 GPS 跳过 {summary.skipped_existing}，失败 {summary.failed}。"
+        f"已有 GPS 跳过 {summary.skipped_existing}，失败 {summary.failed}，"
+        f"实际耗时 {format_duration(actual_duration)}。"
     )
     return 1 if summary.failed else 0
 
@@ -245,6 +402,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="强制覆盖已有 GPS 信息；默认跳过",
     )
     parser.add_argument("--no-backup", action="store_true", help="不备份被修改的照片")
+    parser.add_argument(
+        "-j",
+        "--workers",
+        type=worker_count,
+        default=recommended_workers(),
+        metavar="N",
+        help="并行处理照片的任务数；1 表示串行",
+    )
     parser.add_argument("--exiftool", default="exiftool", help="ExifTool 可执行文件名或路径")
     return parser
 
