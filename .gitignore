@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# macOS / local IDE files
+.DS_Store
+**/.DS_Store
+
+# Local photo samples and generated output
+tools/gps-metadata-transfer/source.*
+tools/gps-metadata-transfer/target.*
+tools/gps-metadata-transfer/.exif-transfer-backup/
+tools/photo-compressor/raw/
+tools/photo-compressor/compressed/
+tools/photo-compressor/*.csv
+tools/photo-compressor/*.jsonl
