@@ -11,11 +11,13 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable, Sequence, TextIO
+from .runtime import exiftool_path
 
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg"}
@@ -126,7 +128,7 @@ def image_files(directory: Path, template: Path) -> Iterable[Path]:
         if BACKUP_DIRECTORY_NAME in path.parts:
             continue
         if (
-            path.is_file()
+            not path.is_symlink() and path.is_file()
             and path.suffix.lower() in IMAGE_SUFFIXES
             and path.resolve() != template_resolved
         ):
@@ -134,13 +136,17 @@ def image_files(directory: Path, template: Path) -> Iterable[Path]:
 
 
 def run_exiftool(executable: str, arguments: Sequence[str]) -> CommandResult:
+    command = [executable]
+    if Path(executable).parent.name == 'exiftool' and Path(executable).parent.parent.name == 'vendor':
+        command = ['/usr/bin/perl', executable]
     completed = subprocess.run(
-        [executable, *arguments],
+        [*command, '-config', '', *arguments],
         check=False,
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
+        timeout=120,
     )
     return CommandResult(
         completed.returncode,
@@ -289,6 +295,7 @@ def process_photos(
     photos: Sequence[Path],
     workers: int,
     processor: Callable[[Path], PhotoResult],
+    stop_event=None,
 ) -> Iterable[PhotoResult]:
     def guarded(photo: Path) -> PhotoResult:
         try:
@@ -296,15 +303,31 @@ def process_photos(
         except Exception as error:
             return PhotoResult("failed", f"未预期的处理错误：{error}")
 
+    def stopped():
+        return stop_event is not None and stop_event.is_set()
+
     if workers == 1:
         for photo in photos:
+            if stopped():break
             yield guarded(photo)
         return
     with ThreadPoolExecutor(
         max_workers=workers,
         thread_name_prefix="batch-gps-copy",
     ) as executor:
-        yield from executor.map(guarded, photos)
+        # Drain active writes after stop, without submitting the whole folder.
+        pending = deque()
+        inputs = iter(photos)
+        for _ in range(workers):
+            if stopped():break
+            photo = next(inputs, None)
+            if photo is None:break
+            pending.append(executor.submit(guarded, photo))
+        while pending:
+            yield pending.popleft().result()
+            if not stopped():
+                photo = next(inputs, None)
+                if photo is not None:pending.append(executor.submit(guarded, photo))
 
 
 def validate_paths(template: Path, directory: Path) -> None:
@@ -316,17 +339,18 @@ def validate_paths(template: Path, directory: Path) -> None:
         raise NotADirectoryError(f"目标路径不存在或不是文件夹：{directory}")
 
 
-def execute(args: argparse.Namespace) -> int:
+def execute(args: argparse.Namespace, event_callback=None, stop_event=None) -> int:
+    def emit(kind, **data):
+        if event_callback:event_callback({'kind': kind, **data})
+
     overall_started_at = time.monotonic()
+    worker_count(str(args.workers))
     template = args.template_photo.expanduser().resolve()
     directory = args.directory.expanduser().resolve()
     validate_paths(template, directory)
 
-    executable = shutil.which(args.exiftool)
-    if executable is None:
-        raise FileNotFoundError(
-            f"找不到 ExifTool：{args.exiftool}。请按 README 安装，或用 --exiftool 指定路径。"
-        )
+    executable = exiftool_path(args.exiftool)
+    emit('preparing')
 
     template_metadata, error = read_gps(executable, template)
     if template_metadata is None:
@@ -338,6 +362,7 @@ def execute(args: argparse.Namespace) -> int:
     summary = Summary(found=len(photos))
     if not photos:
         print("目标文件夹中没有可处理的 JPG/JPEG 照片。")
+        emit('empty')
         return 0
 
     expected = coordinate_values(template_metadata)
@@ -360,7 +385,9 @@ def execute(args: argparse.Namespace) -> int:
     )
     progress = ProgressReporter(len(photos))
     failures: list[tuple[Path, str]] = []
-    results = process_photos(photos, args.workers, processor)
+    emit('started', total=len(photos), workers=args.workers, force=args.force,
+         backup=not args.no_backup)
+    results = process_photos(photos, args.workers, processor, stop_event)
     for photo, result in zip(photos, results):
         if result.status == "failed":
             summary.failed += 1
@@ -370,6 +397,11 @@ def execute(args: argparse.Namespace) -> int:
         else:
             summary.written += 1
         progress.advance()
+        elapsed = time.monotonic()-overall_started_at
+        emit('progress', completed=progress.completed, total=len(photos),
+             written=summary.written, skipped=summary.skipped_existing, failed=summary.failed,
+             file=photo.name, elapsed=elapsed,
+             remaining=elapsed/progress.completed*(len(photos)-progress.completed))
     progress.finish()
 
     if failures:
@@ -380,11 +412,16 @@ def execute(args: argparse.Namespace) -> int:
             print(f"  ……另有 {len(failures) - 20} 张失败未逐项显示。")
 
     actual_duration = time.monotonic() - overall_started_at
+    cancelled = stop_event is not None and stop_event.is_set() and progress.completed < len(photos)
     print(
         f"处理完成：发现 {summary.found}，写入 {summary.written}，"
         f"已有 GPS 跳过 {summary.skipped_existing}，失败 {summary.failed}，"
         f"实际耗时 {format_duration(actual_duration)}。"
     )
+    emit('completed', total=summary.found, processed=progress.completed, written=summary.written,
+         skipped=summary.skipped_existing, failed=summary.failed, cancelled=cancelled,
+         seconds=actual_duration, backup_directory=str(backup_root),
+         failures=[{'file':str(path),'message':message} for path,message in failures[:20]])
     return 1 if summary.failed else 0
 
 

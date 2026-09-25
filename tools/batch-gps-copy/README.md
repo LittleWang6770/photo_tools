@@ -10,7 +10,15 @@
 - 修改前默认将原文件备份到目标文件夹内的 `.batch-gps-copy-backup/`；重复运行不会覆盖旧备份。
 - 模板照片即使位于目标文件夹内也不会被处理。
 
-## 安装
+## macOS App
+
+现在可以直接双击 `dist/照片GPS复制.app`，通过 Finder 同款系统窗口选择 GPS 来源照片和待处理目录，无需安装 Python 或 ExifTool。
+
+界面提供「跳过已有 GPS / 覆盖原图 GPS」、CPU 并发数、原图备份、进度与预计剩余时间，以及停止按钮。默认跳过已有 GPS，并在修改前备份原图。
+
+当前成品适用于 Apple Silicon、macOS 26 或更新版本。详见 [App 使用与构建说明](macos/README.md)，[图标及绘图提示词](macos/assets/README.md)。
+
+## 命令行安装
 
 需要 Python 3.10+ 和 [ExifTool](https://exiftool.org/)。macOS 可执行：
 

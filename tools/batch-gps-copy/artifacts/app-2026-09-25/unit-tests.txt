@@ -1,0 +1,29 @@
+test_backup_failure_prevents_writing (test_app_engine.AppEngineTests.test_backup_failure_prevents_writing) ... ok
+test_bounded_stop_drains_only_active_jobs (test_app_engine.AppEngineTests.test_bounded_stop_drains_only_active_jobs) ... ok
+test_callbacks_and_cancel_before_writing (test_app_engine.AppEngineTests.test_callbacks_and_cancel_before_writing) ... ok
+test_discovery_does_not_follow_photo_symlinks (test_app_engine.AppEngineTests.test_discovery_does_not_follow_photo_symlinks) ... ok
+test_stop_before_start_does_no_work (test_app_engine.AppEngineTests.test_stop_before_start_does_no_work) ... ok
+test_rejects_template_without_coordinates (test_cli.BatchCopyIntegrationTests.test_rejects_template_without_coordinates) ... usage: python -m unittest [-h] [-f] [--no-backup] [-j N] [--exiftool EXIFTOOL]
+                          template_photo directory
+python -m unittest: error: 模板照片没有完整的 GPS 经纬度。
+ok
+test_skips_existing_gps_by_default_and_force_overwrites_it (test_cli.BatchCopyIntegrationTests.test_skips_existing_gps_by_default_and_force_overwrites_it) ... 找到 3 张照片，模板坐标：31.2304 N, 121.4737 E，并发数：3
+[██████████] 100.0% 3/3 | 已用 00:00:00 | 预计 00:00:00 | 剩余 00:00:00
+处理完成：发现 3，写入 2，已有 GPS 跳过 1，失败 0，实际耗时 00:00:00。
+找到 3 张照片，模板坐标：31.2304 N, 121.4737 E，并发数：3
+[██████████] 100.0% 3/3 | 已用 00:00:00 | 预计 00:00:00 | 剩余 00:00:00
+ok
+test_discovers_jpegs_recursively_and_excludes_template_and_backups (test_cli.DiscoveryTests.test_discovers_jpegs_recursively_and_excludes_template_and_backups) ... ok
+test_one_failure_does_not_stop_remaining_photos (test_cli.ParallelismTests.test_one_failure_does_not_stop_remaining_photos) ... ok
+test_processes_multiple_photos_concurrently (test_cli.ParallelismTests.test_processes_multiple_photos_concurrently) ... ok
+test_recommends_conservative_worker_count (test_cli.ParallelismTests.test_recommends_conservative_worker_count) ... ok
+test_rejects_unsafe_worker_counts (test_cli.ParallelismTests.test_rejects_unsafe_worker_counts) ... ok
+test_formats_duration_and_estimated_time (test_cli.ProgressTests.test_formats_duration_and_estimated_time) ... ok
+test_interactive_progress_reuses_one_terminal_line (test_cli.ProgressTests.test_interactive_progress_reuses_one_terminal_line) ... ok
+test_non_interactive_output_only_writes_final_progress (test_cli.ProgressTests.test_non_interactive_output_only_writes_final_progress) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 1.645s
+
+OK
+处理完成：发现 3，写入 3，已有 GPS 跳过 0，失败 0，实际耗时 00:00:00。

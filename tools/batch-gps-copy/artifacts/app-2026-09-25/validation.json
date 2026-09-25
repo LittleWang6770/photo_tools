@@ -1,0 +1,212 @@
+{
+  "version": "0.2.0",
+  "build": "1",
+  "architecture": "arm64",
+  "minimum_macos": "26.0",
+  "unit_tests": {
+    "passed": 15,
+    "failed": 0
+  },
+  "app_cases": [
+    {
+      "panels": {
+        "photo": {
+          "native": true,
+          "files": true,
+          "directories": false,
+          "multiple": false
+        },
+        "directory": {
+          "native": true,
+          "files": false,
+          "directories": true,
+          "multiple": false
+        }
+      },
+      "template_valid": true,
+      "run_options": {
+        "force": false,
+        "backup": true,
+        "workers": 1
+      },
+      "result": {
+        "kind": "completed",
+        "total": 3,
+        "processed": 3,
+        "written": 2,
+        "skipped": 1,
+        "failed": 0,
+        "cancelled": false,
+        "seconds": 0.6923418749938719,
+        "failures": []
+      },
+      "run_enabled": true,
+      "case": "skip",
+      "template_unchanged": true,
+      "backup_content_verified": true,
+      "jpeg_scan_and_non_gps_metadata_preserved": true,
+      "minimal_path_launch": true
+    },
+    {
+      "panels": {
+        "photo": {
+          "native": true,
+          "files": true,
+          "directories": false,
+          "multiple": false
+        },
+        "directory": {
+          "native": true,
+          "files": false,
+          "directories": true,
+          "multiple": false
+        }
+      },
+      "template_valid": true,
+      "run_options": {
+        "force": true,
+        "backup": true,
+        "workers": 2
+      },
+      "result": {
+        "kind": "completed",
+        "total": 3,
+        "processed": 3,
+        "written": 3,
+        "skipped": 0,
+        "failed": 0,
+        "cancelled": false,
+        "seconds": 0.6335831669857726,
+        "failures": []
+      },
+      "run_enabled": true,
+      "case": "overwrite",
+      "template_unchanged": true,
+      "backup_content_verified": true,
+      "jpeg_scan_and_non_gps_metadata_preserved": true,
+      "minimal_path_launch": true
+    },
+    {
+      "panels": {
+        "photo": {
+          "native": true,
+          "files": true,
+          "directories": false,
+          "multiple": false
+        },
+        "directory": {
+          "native": true,
+          "files": false,
+          "directories": true,
+          "multiple": false
+        }
+      },
+      "template_valid": true,
+      "run_options": {
+        "force": false,
+        "backup": false,
+        "workers": 2
+      },
+      "result": {
+        "kind": "completed",
+        "total": 3,
+        "processed": 3,
+        "written": 2,
+        "skipped": 1,
+        "failed": 0,
+        "cancelled": false,
+        "seconds": 0.6244596249889582,
+        "failures": []
+      },
+      "run_enabled": true,
+      "case": "no-backup",
+      "template_unchanged": true,
+      "backup_content_verified": true,
+      "jpeg_scan_and_non_gps_metadata_preserved": true,
+      "minimal_path_launch": true
+    },
+    {
+      "panels": {
+        "photo": {
+          "native": true,
+          "files": true,
+          "directories": false,
+          "multiple": false
+        },
+        "directory": {
+          "native": true,
+          "files": false,
+          "directories": true,
+          "multiple": false
+        }
+      },
+      "template_valid": false,
+      "run_options": null,
+      "result": null,
+      "run_enabled": false,
+      "case": "invalid",
+      "template_unchanged": true,
+      "backup_content_verified": true,
+      "jpeg_scan_and_non_gps_metadata_preserved": true,
+      "minimal_path_launch": true
+    }
+  ],
+  "code_signature_verified": true,
+  "internal_symlinks_verified": 20,
+  "icon": {
+    "mode": "RGBA",
+    "size": [
+      1254,
+      1254
+    ],
+    "bundle_resource": "GPSCopy.icns"
+  },
+  "bundled_exiftool": {
+    "version": "13.55",
+    "upstream": "https://github.com/exiftool/exiftool",
+    "modifications": "Relocate Homebrew library paths to adjacent lib; use /usr/bin/perl.",
+    "installed_script_sha256": "18b091f3a5cecac39f97440c1f4ae968c5fed2fcf1c74b29536b10d5fc12a4e2",
+    "bundled_script_sha256": "c8b316753d3e18447e8754c16ca5c9927015316e0493cb6b584de8f0c814c4a9"
+  },
+  "test_scope": "Generated JPEG fixtures only; native panels opened and cancelled, then shared selection handlers and real Run button exercised.",
+  "delivery_directory_launch_verified": true,
+  "delivery_skip_case": {
+    "panels": {
+      "photo": {
+        "native": true,
+        "files": true,
+        "directories": false,
+        "multiple": false
+      },
+      "directory": {
+        "native": true,
+        "files": false,
+        "directories": true,
+        "multiple": false
+      }
+    },
+    "template_valid": true,
+    "run_options": {
+      "force": false,
+      "backup": true,
+      "workers": 1
+    },
+    "result": {
+      "kind": "completed",
+      "total": 3,
+      "processed": 3,
+      "written": 2,
+      "skipped": 1,
+      "failed": 0,
+      "cancelled": false,
+      "seconds": 0.6804323339893017,
+      "failures": []
+    },
+    "run_enabled": true,
+    "case": "skip",
+    "template_unchanged": true,
+    "backup_content_verified": true,
+    "jpeg_scan_and_non_gps_metadata_preserved": true,
+    "minimal_path_launch": true
+  }
+}

@@ -1,0 +1,5 @@
+.venv-app/
+vendor/
+reports/
+.cache/
+!macos/BatchGPSCopy.spec
