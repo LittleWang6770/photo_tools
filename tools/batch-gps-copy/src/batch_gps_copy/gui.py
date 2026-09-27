@@ -59,7 +59,7 @@ class Controller(NSObject):
         self.label('2  待处理照片目录', (52,442,470,24), 15, strong=True)
         self.directory_label = self.label('选择需要写入 GPS 的文件夹', (52,414,464,23), 13)
         self.directory_label.cell().setLineBreakMode_(NSLineBreakByTruncatingMiddle)
-        self.label('包含子目录中的 JPG / JPEG，自动排除来源照片和备份。', (52,386,608,22), 12)
+        self.label('包含子目录中的 JPG / JPEG，跳过来源照片、隐藏目录和备份。', (52,386,608,22), 12)
         self.directory_button = self.button('选择文件夹…', 'chooseDirectory:', (532,410,136,34))
         self.card((32,246,656,112))
         self.label('已有 GPS 时', (52,328,365,22), 13, strong=True)
@@ -70,9 +70,9 @@ class Controller(NSObject):
         self.workers_picker = self.popup([f'自动 · {self.default_workers} 个任务（推荐）'] +
             [str(i) for i in range(1,self.available_cpus+1)], (452,290,220,32))
         self.label(f'本机 {os.cpu_count() or 1} 个逻辑核心', (456,261,212,22), 11)
-        self.backup = self.button('修改前备份原图（推荐）', 'optionsChanged:', (40,210,620,24))
-        self.backup.setButtonType_(NSButtonTypeSwitch);self.backup.setState_(NSOnState)
-        self.backup_hint = self.label('备份放在所选目录内；重复运行不会覆盖旧备份。', (44,182,632,23), 11)
+        self.backup = self.button('修改前备份原图（可选，额外占用空间）', 'optionsChanged:', (40,210,620,24))
+        self.backup.setButtonType_(NSButtonTypeSwitch);self.backup.setState_(NSOffState)
+        self.backup_hint = self.label('默认不备份：直接更新 GPS，不保留修改前副本；已有备份保持不变。', (44,182,632,23), 12)
         self.run_button = self.button('开始复制', 'runCopy:', (240,130,156,40))
         self.run_button.setKeyEquivalent_('\r');self.run_button.setEnabled_(False)
         self.stop_button = self.button('停止', 'stopCopy:', (412,130,80,40))
@@ -182,7 +182,10 @@ class Controller(NSObject):
 
     def optionsChanged_(self, sender):
         self.mode_hint.setStringValue_('没有 GPS 的照片仍会写入来源位置。' if self.mode_picker.indexOfSelectedItem()==0 else '已有位置也会替换为来源照片的位置。')
-        self.backup_hint.setStringValue_('备份放在所选目录内；重复运行不会覆盖旧备份。' if self.backup.state()==NSOnState else '已关闭备份：原图 GPS 将直接修改，不生成备份副本。')
+        enabled = self.backup.state()==NSOnState
+        self.backup_hint.setStringValue_('将额外保存完整原图，空间接近本次修改照片的总大小；重复写入会累积备份。' if enabled else '默认不备份：直接更新 GPS，不保留修改前副本；已有备份保持不变。')
+        self.backup_hint.setTextColor_(NSColor.systemOrangeColor() if enabled else NSColor.secondaryLabelColor())
+        self.backup_hint.setToolTip_('备份位于所选目录内的 .batch-gps-copy-backup；同名旧备份会保留。' if enabled else '关闭备份不会清理以前生成的备份。')
 
     def runCopy_(self, sender):
         if self.busy or not self.template_valid or not self.directory_path:return
@@ -221,10 +224,13 @@ class Controller(NSObject):
             self.last_completed=event['completed'];self.eta_deadline=time.monotonic()+event['remaining']
             self.refreshETA_(None)
             self.status.setStringValue_(f'{event["completed"]} / {event["total"]}  ·  写入 {event["written"]}  ·  跳过 {event["skipped"]}  ·  失败 {event["failed"]}\n{event["file"]}')
+            if self.test_options and not getattr(self,'test_progress_snapshot',False):
+                self.snapshot('running.png');self.test_progress_snapshot=True
         elif kind=='completed':
             self.last_result=dict(event);self.eta_deadline=None
             self.eta.setStringValue_('已停止' if event['cancelled'] else '已完成')
-            self.status.setStringValue_(f'{"已停止" if event["cancelled"] else "完成"}：写入 {event["written"]}，跳过 {event["skipped"]}，失败 {event["failed"]}。\n用时 {format_duration(event["seconds"])}；'+('已完成的修改和备份保留。' if event['cancelled'] else '写入后已核验经纬度。'))
+            backup_status = '已保留备份，可点击「打开备份」查看。' if event['backup'] else '本次未生成原图备份。'
+            self.status.setStringValue_(f'{"已停止" if event["cancelled"] else "完成"}：写入 {event["written"]}，跳过 {event["skipped"]}，失败 {event["failed"]}。\n用时 {format_duration(event["seconds"])}；'+backup_status)
             self.open_backup_button.setEnabled_(Path(event['backup_directory']).is_dir())
         elif kind=='empty':
             self.eta.setStringValue_('没有待处理照片');self.status.setStringValue_('目录中没有可处理的 JPG / JPEG，未修改任何照片。')
@@ -275,6 +281,7 @@ class Controller(NSObject):
         bitmap.representationUsingType_properties_(NSPNGFileType,{}).writeToFile_atomically_(str(Path(self.test_options['output'])/filename),True)
 
     def beginTest_(self, sender):
+        self.test_initial_backup=bool(self.backup.state()==NSOnState)
         self.test_panels={};self.snapshot('initial.png');self.chooseTemplate_(None)
         self.performSelector_withObject_afterDelay_('cancelPhotoTest:',None,.4)
 
@@ -288,7 +295,8 @@ class Controller(NSObject):
         self.active_panel.cancel_(None)
         self.mode_picker.selectItemAtIndex_(1 if self.test_options['force'] else 0)
         self.workers_picker.selectItemAtIndex_(self.test_options['workers'])
-        self.backup.setState_(NSOnState if self.test_options['backup'] else NSOffState)
+        if 'backup' in self.test_options:
+            self.backup.setState_(NSOnState if self.test_options['backup'] else NSOffState)
         self.optionsChanged_(None);self.set_directory(self.test_options['directory'])
         self.test_waiting=True;self.set_template(self.test_options['template'])
 
@@ -300,6 +308,9 @@ class Controller(NSObject):
     def finishTest_(self, sender):
         self.snapshot('completed.png')
         receipt={'panels':self.test_panels,'template_valid':self.template_valid,
+                 'initial_backup':self.test_initial_backup,
+                 'backup_hint':str(self.backup_hint.stringValue()),
+                 'status':str(self.status.stringValue()),
                  'run_options':getattr(self,'test_run_options',None),'result':self.last_result,
                  'run_enabled':bool(self.run_button.isEnabled())}
         (Path(self.test_options['output'])/'gui-test.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2))

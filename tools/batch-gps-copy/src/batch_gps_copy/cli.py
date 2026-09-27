@@ -122,17 +122,22 @@ class ProgressReporter:
 
 
 def image_files(directory: Path, template: Path) -> Iterable[Path]:
-    """Yield JPEG files recursively and deterministically."""
+    """Yield visible JPEGs, pruning hidden/cache trees before traversal."""
     template_resolved = template.resolve()
-    for path in sorted(directory.rglob("*"), key=lambda item: str(item).casefold()):
-        if BACKUP_DIRECTORY_NAME in path.parts:
-            continue
-        if (
-            not path.is_symlink() and path.is_file()
-            and path.suffix.lower() in IMAGE_SUFFIXES
-            and path.resolve() != template_resolved
-        ):
-            yield path
+    if any(part in (BACKUP_DIRECTORY_NAME, '.gaze-sort') for part in directory.parts):
+        return
+    for parent, directories, filenames in os.walk(directory, followlinks=False):
+        directories[:] = sorted(
+            (name for name in directories
+             if not name.startswith('.') and not (Path(parent) / name).is_symlink()),
+            key=str.casefold,
+        )
+        for name in sorted(filenames, key=str.casefold):
+            path = Path(parent) / name
+            if (not name.startswith('.') and not path.is_symlink() and path.is_file()
+                    and path.suffix.lower() in IMAGE_SUFFIXES
+                    and path.resolve() != template_resolved):
+                yield path
 
 
 def run_exiftool(executable: str, arguments: Sequence[str]) -> CommandResult:
@@ -420,7 +425,7 @@ def execute(args: argparse.Namespace, event_callback=None, stop_event=None) -> i
     )
     emit('completed', total=summary.found, processed=progress.completed, written=summary.written,
          skipped=summary.skipped_existing, failed=summary.failed, cancelled=cancelled,
-         seconds=actual_duration, backup_directory=str(backup_root),
+         seconds=actual_duration, backup_directory=str(backup_root), backup=not args.no_backup,
          failures=[{'file':str(path),'message':message} for path,message in failures[:20]])
     return 1 if summary.failed else 0
 
@@ -428,7 +433,7 @@ def execute(args: argparse.Namespace, event_callback=None, stop_event=None) -> i
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="把一张模板照片的 GPS 经纬度批量复制到文件夹内的 JPG/JPEG。",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=argparse.HelpFormatter,
     )
     parser.add_argument("template_photo", type=Path, help="提供 GPS 信息的模板照片")
     parser.add_argument("directory", type=Path, help="需要批量写入 GPS 的照片文件夹")
@@ -438,14 +443,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="强制覆盖已有 GPS 信息；默认跳过",
     )
-    parser.add_argument("--no-backup", action="store_true", help="不备份被修改的照片")
+    backup_options = parser.add_mutually_exclusive_group()
+    backup_options.add_argument("--backup", dest="no_backup", action="store_false",
+                                help="修改前保留完整原图副本（默认关闭），会额外占用磁盘空间")
+    backup_options.add_argument("--no-backup", dest="no_backup", action="store_true",
+                                help="不生成原图备份（默认）；现有备份保持不变")
+    parser.set_defaults(no_backup=True)
     parser.add_argument(
         "-j",
         "--workers",
         type=worker_count,
         default=recommended_workers(),
         metavar="N",
-        help="并行处理照片的任务数；1 表示串行",
+        help="并行处理照片的任务数；默认 %(default)s，1 表示串行",
     )
     parser.add_argument("--exiftool", default="exiftool", help="ExifTool 可执行文件名或路径")
     return parser

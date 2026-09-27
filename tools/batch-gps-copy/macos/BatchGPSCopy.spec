@@ -14,10 +14,10 @@ collection=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name='BatchGPSCo
 app=BUNDLE(collection,name='照片GPS复制.app',icon=str(root/'macos/assets/GPSCopy.icns'),
     bundle_identifier='com.littlewang.batch-gps-copy',info_plist={
         'CFBundleName':'照片GPS复制','CFBundleDisplayName':'照片 GPS 复制',
-        'CFBundleShortVersionString':'0.2.0','CFBundleVersion':'1',
+        'CFBundleShortVersionString':'0.2.1','CFBundleVersion':'2',
         'NSHighResolutionCapable':True,'NSPrincipalClass':'NSApplication',
         'LSMinimumSystemVersion':'26.0','CFBundleDevelopmentRegion':'zh_CN',
-        'NSDesktopFolderUsageDescription':'读取所选来源照片，并为目标照片写入 GPS 和保存原图备份。',
-        'NSDocumentsFolderUsageDescription':'读取所选来源照片，并为目标照片写入 GPS 和保存原图备份。',
-        'NSDownloadsFolderUsageDescription':'读取所选来源照片，并为目标照片写入 GPS 和保存原图备份。',
-        'NSRemovableVolumesUsageDescription':'处理所选磁盘中的照片并保留修改前备份。'})
+        'NSDesktopFolderUsageDescription':'读取所选来源照片，并为目标照片写入 GPS；仅在手动开启时保存备份。',
+        'NSDocumentsFolderUsageDescription':'读取所选来源照片，并为目标照片写入 GPS；仅在手动开启时保存备份。',
+        'NSDownloadsFolderUsageDescription':'读取所选来源照片，并为目标照片写入 GPS；仅在手动开启时保存备份。',
+        'NSRemovableVolumesUsageDescription':'处理所选磁盘中的照片；仅在手动开启时保存备份。'})

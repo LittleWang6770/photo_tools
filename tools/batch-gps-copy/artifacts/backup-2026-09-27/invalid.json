@@ -1,0 +1,29 @@
+{
+  "panels": {
+    "photo": {
+      "native": true,
+      "files": true,
+      "directories": false,
+      "multiple": false
+    },
+    "directory": {
+      "native": true,
+      "files": false,
+      "directories": true,
+      "multiple": false
+    }
+  },
+  "template_valid": false,
+  "initial_backup": false,
+  "backup_hint": "默认不备份：直接更新 GPS，不保留修改前副本；已有备份保持不变。",
+  "status": "先选择 GPS 来源照片和待处理目录。",
+  "run_options": null,
+  "result": null,
+  "run_enabled": false,
+  "case": "invalid",
+  "template_unchanged": true,
+  "backup_content_verified": true,
+  "hidden_caches_unchanged": true,
+  "jpeg_scan_and_non_gps_metadata_preserved": true,
+  "minimal_path_launch": true
+}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "batch-gps-copy"
-version = "0.2.0"
+version = "0.2.1"
 description = "Copy GPS metadata from one JPEG to every JPEG in a directory."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -62,7 +62,7 @@ class BatchCopyIntegrationTests(unittest.TestCase):
             set_gps(exiftool, template, 31.2304, 121.4737)
             set_gps(exiftool, existing, 39.9042, 116.4074)
 
-            self.assertEqual(0, cli.main([str(template), str(photos)]))
+            self.assertEqual(0, cli.main([str(template), str(photos), '--backup']))
             blank_gps, _ = cli.read_gps(exiftool, blank)
             existing_gps, _ = cli.read_gps(exiftool, existing)
             nested_gps, _ = cli.read_gps(exiftool, nested)
@@ -75,7 +75,7 @@ class BatchCopyIntegrationTests(unittest.TestCase):
             self.assertEqual("N", blank_gps["GPSLatitudeRef"])
             self.assertEqual("E", blank_gps["GPSLongitudeRef"])
 
-            self.assertEqual(0, cli.main([str(template), str(photos), "-f"]))
+            self.assertEqual(0, cli.main([str(template), str(photos), "-f", '--backup']))
             overwritten_gps, _ = cli.read_gps(exiftool, existing)
             self.assertIsNotNone(overwritten_gps)
             self.assertAlmostEqual(31.2304, float(overwritten_gps["GPSLatitude"]), places=6)
@@ -102,6 +102,17 @@ class BatchCopyIntegrationTests(unittest.TestCase):
 
 
 class DiscoveryTests(unittest.TestCase):
+    def test_excludes_nested_hidden_caches_and_directory_symlinks(self):
+        with tempfile.TemporaryDirectory() as t:
+            root=Path(t);template=root/'source.jpg';write_jpeg(template)
+            visible=root/'JPG/candidate/selected.jpg';write_jpeg(visible)
+            for name in ['JPG/.gaze-sort/runs/preview.jpg', '.cache/thumb.jpg',
+                         'JPG/.batch-gps-copy-backup/old.jpg', 'JPG/.hidden.jpg']:
+                write_jpeg(root/name)
+            (root/'alias').symlink_to(root/'JPG',target_is_directory=True)
+            self.assertEqual(list(cli.image_files(root,template)),[visible])
+            self.assertEqual(list(cli.image_files(root/'JPG/.gaze-sort',template)),[])
+
     def test_discovers_jpegs_recursively_and_excludes_template_and_backups(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

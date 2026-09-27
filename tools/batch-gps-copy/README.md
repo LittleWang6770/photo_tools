@@ -7,14 +7,16 @@
 - 写入后自动核验经纬度。
 - 默认使用保守的并发数批量处理，并可通过 `-j/--workers` 调整。
 - 终端使用单行进度条，不会为每张照片持续刷屏；进度条包含已用时间、预计总耗时和剩余时间，结束时显示实际总耗时。
-- 修改前默认将原文件备份到目标文件夹内的 `.batch-gps-copy-backup/`；重复运行不会覆盖旧备份。
+- 默认直接更新 GPS，不生成原图备份；已有备份保持不变。
+- 可用 `--backup` 手动开启完整原图备份，存入目标文件夹内的 `.batch-gps-copy-backup/`；重复写入会新增备份，占用空间会累积。
+- 自动跳过隐藏文件、隐藏目录（包括 `.gaze-sort` 报告和备份）及符号链接。
 - 模板照片即使位于目标文件夹内也不会被处理。
 
 ## macOS App
 
 现在可以直接双击 `dist/照片GPS复制.app`，通过 Finder 同款系统窗口选择 GPS 来源照片和待处理目录，无需安装 Python 或 ExifTool。
 
-界面提供「跳过已有 GPS / 覆盖原图 GPS」、CPU 并发数、原图备份、进度与预计剩余时间，以及停止按钮。默认跳过已有 GPS，并在修改前备份原图。
+界面提供「跳过已有 GPS / 覆盖原图 GPS」、CPU 并发数、原图备份、进度与预计剩余时间，以及停止按钮。默认跳过已有 GPS，默认不备份。需要保留修改前副本时勾选「修改前备份原图」；界面会提示额外空间占用，完成后显示本次是否启用备份。
 
 当前成品适用于 Apple Silicon、macOS 26 或更新版本。详见 [App 使用与构建说明](macos/README.md)，[图标及绘图提示词](macos/assets/README.md)。
 
@@ -67,11 +69,13 @@ batch-gps-copy -j 4 "/path/to/target_photo.JPG" "/path/to/photos"
 
 其中“预计”表示预计总耗时。处理结束后会显示实际总耗时。普通使用命令不需要增加任何参数。
 
-如明确不需要备份：
+如需要保留修改前的完整原图：
 
 ```bash
-batch-gps-copy -f --no-backup target_photo.JPG /path/to/photos
+batch-gps-copy --backup target_photo.JPG /path/to/photos
 ```
+
+`--no-backup` 继续兼容，行为与默认一致；不能与 `--backup` 同时使用。关闭备份不会删除以前生成的备份。
 
 工具只处理 `.jpg` 和 `.jpeg`（扩展名大小写不敏感），并递归处理子文件夹。模板照片必须包含完整的 GPS 纬度和经度，否则工具会拒绝运行。
 

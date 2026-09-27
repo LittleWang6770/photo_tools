@@ -1,0 +1,44 @@
+{
+  "panels": {
+    "photo": {
+      "native": true,
+      "files": true,
+      "directories": false,
+      "multiple": false
+    },
+    "directory": {
+      "native": true,
+      "files": false,
+      "directories": true,
+      "multiple": false
+    }
+  },
+  "template_valid": true,
+  "initial_backup": false,
+  "backup_hint": "将额外保存完整原图，空间接近本次修改照片的总大小；重复写入会累积备份。",
+  "status": "完成：写入 2，跳过 1，失败 0。\n用时 00:00:00；已保留备份，可点击「打开备份」查看。",
+  "run_options": {
+    "force": false,
+    "backup": true,
+    "workers": 2
+  },
+  "result": {
+    "kind": "completed",
+    "total": 3,
+    "processed": 3,
+    "written": 2,
+    "skipped": 1,
+    "failed": 0,
+    "cancelled": false,
+    "seconds": 0.42379279201850295,
+    "backup": true,
+    "failures": []
+  },
+  "run_enabled": true,
+  "case": "backup",
+  "template_unchanged": true,
+  "backup_content_verified": true,
+  "hidden_caches_unchanged": true,
+  "jpeg_scan_and_non_gps_metadata_preserved": true,
+  "minimal_path_launch": true
+}
