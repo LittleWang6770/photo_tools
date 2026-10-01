@@ -1,5 +1,7 @@
 # 批量复制照片 GPS
 
+> **已迁移：**「照片 GPS 复制」现由独立仓库 [LittleWang6770/batch-gps-copy](https://github.com/LittleWang6770/batch-gps-copy) 维护；[下载安装包](https://github.com/LittleWang6770/batch-gps-copy/releases/latest)。此处保留历史代码，后续更新请使用新仓库。
+
 把一张 JPG/JPEG 模板照片中的 GPS 经纬度和南北/东西方向标记，递归复制到指定文件夹内的所有 JPG/JPEG 照片。海拔、GPS 时间等其他定位字段不会被复制。
 
 - 目标照片已有任何 GPS 信息时默认跳过。

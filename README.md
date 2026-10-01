@@ -1,5 +1,7 @@
 # Photo Tools
 
+> **已迁移：**「照片 GPS 复制」现由独立仓库 [LittleWang6770/batch-gps-copy](https://github.com/LittleWang6770/batch-gps-copy) 维护；[下载安装包](https://github.com/LittleWang6770/batch-gps-copy/releases/latest)。此处保留历史代码，后续更新请使用新仓库。
+
 `photo-tools` 是一个多工具仓库，包含四个相互独立、可直接安装的命令行工具：
 
 - [`tools/batch-gps-copy/`](tools/batch-gps-copy/)：把一张模板照片的 GPS 批量复制到文件夹内的全部照片，默认跳过已有 GPS 的照片，`-f` 可强制覆盖。
