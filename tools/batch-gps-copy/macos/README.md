@@ -67,3 +67,19 @@ PYTHONPATH=src .venv-app/bin/python -m unittest discover -s tests -v
 App 测试实际打开并取消原生照片/文件夹选择窗口，再通过相同的选择处理函数传入测试路径，触发真实「开始复制」按钮；没有模拟在 Finder 列表中逐行点击。启动时使用临时工作目录及最小 PATH，验证内置依赖可用。截图和运行日志保存在 `reports/`（不提交 Git）；0.2.1 验证结果与界面截图保存在 `artifacts/backup-2026-09-27/`，旧版验证在 `artifacts/app-2026-09-25/`。
 
 第三方组件及许可证见 [THIRD_PARTY.md](THIRD_PARTY.md)。
+
+## DMG 与 GitHub Release
+
+安装包：<https://github.com/LittleWang6770/photo_tools/releases/tag/batch-gps-copy-v0.2.1>。
+
+打开 DMG，将左侧「照片GPS复制」拖到右侧 Applications，随后从「应用程序」启动。DMG 只有 App 和 Applications 入口，不包含照片、历史备份或开发环境。支持 Apple Silicon，macOS 26.0 及以上；尚未经过 Developer ID 签名 / Apple 公证，首次打开可能被系统提示拦截。
+
+在已经构建并验证 App 后运行：
+
+```bash
+.venv-app/bin/python macos/build_dmg.py
+```
+
+生成 `dist/BatchGPSCopy-0.2.1-arm64.dmg` 及同名 `.dmg.sha256` 文件。脚本先检查 App 签名，设置简洁的 Finder 拖拽布局，再压缩并验证镜像；已有同名 DMG 不会被覆盖。`ds-store` 仅用于构建安装包，不进入 App 运行依赖。
+
+Release 标签采用子项目名，例如 `batch-gps-copy-v0.2.1`；上传 DMG 与 SHA-256 校验文件。发布前需挂载只读镜像、确认包内签名及文件与原 App 一致，并用镜像中的 App 跑临时合成照片验证。

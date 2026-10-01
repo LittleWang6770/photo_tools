@@ -14,7 +14,7 @@
 
 ## macOS App
 
-现在可以直接双击 `dist/照片GPS复制.app`，通过 Finder 同款系统窗口选择 GPS 来源照片和待处理目录，无需安装 Python 或 ExifTool。
+可从 [GitHub Release](https://github.com/LittleWang6770/photo_tools/releases/tag/batch-gps-copy-v0.2.1) 下载 DMG，拖入 Applications 安装。也可以直接双击 `dist/照片GPS复制.app`，通过 Finder 同款系统窗口选择 GPS 来源照片和待处理目录，无需安装 Python 或 ExifTool。
 
 界面提供「跳过已有 GPS / 覆盖原图 GPS」、CPU 并发数、原图备份、进度与预计剩余时间，以及停止按钮。默认跳过已有 GPS，默认不备份。需要保留修改前副本时勾选「修改前备份原图」；界面会提示额外空间占用，完成后显示本次是否启用备份。
 
